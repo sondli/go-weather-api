@@ -8,12 +8,13 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 )
 
 func main() {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", getRoot)
-	mux.HandleFunc("/weather", getWeather)
+	mux.HandleFunc("/", getRootHandler)
+	mux.HandleFunc("/weather", getWeatherHandler)
 
 	err := http.ListenAndServe(":3333", mux)
 
@@ -25,31 +26,14 @@ func main() {
 	}
 }
 
-func getRoot(w http.ResponseWriter, r *http.Request) {
-	io.WriteString(w, "This is my website!\n")
+func getRootHandler(w http.ResponseWriter, r *http.Request) {
+	io.WriteString(w, "Simple weather api in Go\n")
 }
-func getWeather(w http.ResponseWriter, r *http.Request) {
+func getWeatherHandler(w http.ResponseWriter, r *http.Request) {
 	citiesQueryString := r.URL.Query().Get("cities")
 	cities := strings.Split(citiesQueryString, ",")
-	results := []*weather{}
-	errs := []error{}
 
-	for _, c := range cities {
-		weather, err := getWeatherInCity(c)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		results = append(results, weather)
-	}
-
-	if len(errs) != 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.Header().Set("X-Content-Type-Options", "nosniff")
-		json.NewEncoder(w).Encode(errs)
-        return
-	}
+    results := getWeatherInCities(cities)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -102,6 +86,32 @@ func getWeatherInCity(city string) (w *weather, err error) {
 	}
 
 	return w, err
+}
+
+func getWeatherInCities(cities []string) (weatherList []*weather) {
+    weatherChannel := make(chan *weather, len(cities))
+    var wg sync.WaitGroup
+
+    for _, c := range cities {
+        wg.Add(1)
+        go func(city string) {
+            defer wg.Done()
+            weather, err := getWeatherInCity(city)
+            if err != nil {
+                return
+            }
+            weatherChannel <- weather
+        }(c)
+    }
+
+    wg.Wait()
+    close(weatherChannel)
+
+    for w := range weatherChannel {
+        weatherList = append(weatherList, w)
+    }
+
+    return weatherList
 }
 
 func getRequestUrl(city string, apiKey string) string {
