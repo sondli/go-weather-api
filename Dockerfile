@@ -7,7 +7,7 @@ ENV APP_NAME=$APP_NAME
 WORKDIR /app
 COPY . .
 RUN go mod download
-RUN go build .
+RUN go build -o /$APP_NAME
 
 # Production stage
 FROM alpine:latest as production
