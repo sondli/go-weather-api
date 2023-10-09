@@ -1,19 +1,10 @@
-ARG APP_NAME=go-weather-api
-
-# Build stage
-FROM golang:1.21 as build
-ARG APP_NAME
-ENV APP_NAME=$APP_NAME
+FROM golang:1.21 as builder
 WORKDIR /app
-COPY . .
+COPY go.* ./
 RUN go mod download
-RUN go build -o /$APP_NAME
+COPY . ./
+RUN go build -o server
 
-# Production stage
-FROM alpine:latest as production
-ARG APP_NAME
-ENV APP_NAME=$APP_NAME
-WORKDIR /root/
-COPY --from=build /$APP_NAME ./
-CMD ./$APP_NAME
-
+FROM debian:latest as production
+COPY --from=builder /app/server /app/server
+CMD ["/app/server"]
