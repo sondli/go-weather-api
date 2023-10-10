@@ -1,3 +1,3 @@
 module github.com/sondli/go-weather-api
 
-go 1.20.3
+go 1.20
