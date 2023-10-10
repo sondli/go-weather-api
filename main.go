@@ -16,7 +16,7 @@ func main() {
 	mux.HandleFunc("/", getRootHandler)
 	mux.HandleFunc("/weather", getWeatherHandler)
 
-	err := http.ListenAndServe(":3333", mux)
+	err := http.ListenAndServe(":8080", mux)
 
 	if errors.Is(err, http.ErrServerClosed) {
 		fmt.Printf("server closed\n")
