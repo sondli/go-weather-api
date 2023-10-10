@@ -42,25 +42,25 @@ func getWeatherHandler(w http.ResponseWriter, r *http.Request) {
 	enc.Encode(results)
 }
 
-type location struct {
+type Location struct {
 	Name string `json:"name"`
 }
 
-type current struct {
+type Current struct {
 	Temperature float32 `json:"temp_c"`
 }
 
-type weatherApiResponse struct {
-	Location location `json:"location"`
-	Current  current  `json:"current"`
+type WeatherApiResponse struct {
+	Location Location `json:"location"`
+	Current  Current  `json:"current"`
 }
 
-type weather struct {
+type Weather struct {
 	City        string  `json:"city"`
 	Temperature float32 `json:"temperature"`
 }
 
-func getWeatherInCity(city string) (w *weather, err error) {
+func getWeatherInCity(city string) (w *Weather, err error) {
 	apiKey := os.Getenv("WEATHER_API_KEY")
 	if len(apiKey) == 0 {
         println("apikeyerr")
@@ -73,14 +73,14 @@ func getWeatherInCity(city string) (w *weather, err error) {
 		return nil, err
 	}
 
-	var weatherApiResponseJson weatherApiResponse
+	var weatherApiResponseJson WeatherApiResponse
 	err = json.NewDecoder(response.Body).Decode(&weatherApiResponseJson)
 
 	if err != nil {
 		return nil, err
 	}
 
-	w = &weather{
+	w = &Weather{
 		City:        weatherApiResponseJson.Location.Name,
 		Temperature: weatherApiResponseJson.Current.Temperature,
 	}
@@ -88,8 +88,8 @@ func getWeatherInCity(city string) (w *weather, err error) {
 	return w, err
 }
 
-func getWeatherInCities(cities []string) (weatherList []*weather) {
-    weatherChannel := make(chan *weather, len(cities))
+func getWeatherInCities(cities []string) (weatherList []*Weather) {
+    weatherChannel := make(chan *Weather, len(cities))
     var wg sync.WaitGroup
 
     for _, c := range cities {
